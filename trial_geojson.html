@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<head>
+
+<!-- Link to the leaflet css style sheets and javascript code, dowloaded from 
+      http://leafletjs.com/download.html -->
+<link rel="stylesheet" href="./leaflet/leaflet.css" />
+<script src="./leaflet/leaflet.js"></script> 
+
+<!-- Full screen control added using this script from https://github.com/brunob/leaflet.fullscreen -->
+<link rel="stylesheet" href="./leaflet.fullscreen-master/Control.FullScreen.css" />
+<script src="./leaflet.fullscreen-master/Control.FullScreen.js"></script>
+
+<!-- Include the geojson file of important attributes
+    Don't forget, you have to add "var cdp_restore_11 =" right at the very beginning of the .geojson file.
+      Also, this onlys appears to work with a .geojson file. -->
+<script src="cdp_restore_11.geojson" type="text/javascript"></script>
+
+<style>
+body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            width: 100%;
+            height: 600px;
+        }
+}
+</style>
+</head>
+ 
+<body>
+  
+	<div id="map"></div>
+<script>
+ 	var map = L.map('map',{
+    fullscreenControl: true,
+    fullscreenControlOptions:{
+      position: 'topleft'
+    }
+ 	}).setView([19.9,-155.2], 11);
+ 	
+	L.tileLayer(
+//    'http://{s}.www.toolserver.org/tiles/bw-mapnik/{z}/{x}/{y}.png', {
+    'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
+
+var geojson;
+var info = L.control();
+var legend = L.control({position: 'bottomright'});
+
+// Color the hydroUnits using this custom color ramp!
+function getColor_soe(d){
+  return d > 0.75 ?  '#D73027' :
+         d > 0.50 ?  '#F46D43' :
+         d > 0.25 ?  '#FDAE61' :
+         d > 0.00 ?  '#FEE090' :
+         d > -0.25 ? '#E0F3F8' :
+         d > -0.50 ? '#ABD9E9' :
+         d > -0.75 ? '#74ADD1' :
+                     '#4575B4';
+}
+
+// Style the polygons using the above color ramp and additional stable features.
+function style(feature){
+  return{
+    weight: 0.5,
+    opacity: 1,
+    color: 'black',
+    dashArray: '5',
+    fillOpacity: 0.9,
+    fillColor: getColor_soe(feature.properties.potential)
+  };
+}                                   
+
+// Change the style when you rollover a polygn
+function highlightFeature(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        strokeWidth: '3px',
+        strokeOpacity: 0.7,
+        fillOpacity: 0.5
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera) {
+        layer.bringToFront();
+    };
+    info.update(layer.feature.properties);
+}
+
+// Reset the polygon style when you mouseout
+function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+    info.update();
+}
+
+// Zoom to features when you click on it
+function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+    });
+}
+
+
+info.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+    this.update();
+    return this._div;
+};
+
+// method that we will use to update the control based on feature properties passed
+info.update = function (props) {
+    this._div.innerHTML = '<h4> Hydro subunit  </h4>' +  
+    (props ? '<b>' + "ID: " + props.hydroUnit + '</b><br />' + 
+    "Score: " + props.potential.toString().substring(0,5) 
+        : 'Hover over a hydro subunit');
+};
+
+
+function getColor_soe(d){
+  return d > 0.75 ?  '#D73027' :
+         d > 0.50 ?  '#F46D43' :
+         d > 0.25 ?  '#FDAE61' :
+         d > 0.00 ?  '#FEE090' :
+         d > -0.25 ? '#E0F3F8' :
+         d > -0.50 ? '#ABD9E9' :
+         d > -0.75 ? '#74ADD1' :
+                     '#4575B4';
+}
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend'),
+        //grades = [1, 0.75, 0.5, 0.25, 0, -0.25, -0.5, -0.75],
+        cols = ["#D73027", "#F46D43", "#FDAE61", "#FEE090", "#E0F3F8", "#ABD9E9", "#74ADD1", "#4575B4"],
+        labels = ['Extremely High','Very High', 'High', 'Moderately High', 'Moderately Low',
+                                 'Low', 'Very Low', 'Extremely Low'];
+
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (var i = 0; i < cols.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + cols[i] + '"></i> ' +
+            labels[i] + '<br>';
+    }
+
+    return div;
+};
+
+
+
+
+
+geojson = L.geoJson(cdp_restore_11, 
+ {
+    style: style,
+    onEachFeature: onEachFeature
+  }
+).addTo(map);
+
+info.addTo(map);
+
+legend.addTo(map);
+
+</script>
+<div>
+    <h1><b>Decision support tool for the management of Strawberry Guava in the North Hilo-Hamakua district of Hawaii</b></h1>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+<!-- MANUAL GEIJSON FEATURE
+//var geojsonFeature =
+//{"type":"FeatureCollection","features":[{"geometry": {"type": "Polygon", "coordinates": [[[-155.20428738499993, 19.868415194000079], [-155.2040160249999, 19.869502350000062], [-155.20203406999991, 19.871152564000056], [-155.20204529799992, 19.871965274000047], [-155.2000558119999, 19.873073663000071], [-155.19833770399993, 19.873094882000089], [-155.19608422099992, 19.875832192000075], [-155.19522514899992, 19.875842785000088], [-155.19407599099992, 19.875585999000066], [-155.19294920299993, 19.876954635000061], [-155.19123104499991, 19.876975789000085], [-155.18812572699991, 19.880265397000073], [-155.1864112449999, 19.880557414000066], [-155.18557072599992, 19.881922494000037], [-155.18356613599991, 19.881947095000044], [-155.18243921199991, 19.883315675000063], [-155.17900273099991, 19.883357778000061], [-155.17787575699992, 19.88472633400005], [-155.17415285799993, 19.88477184900006], [-155.17301843699991, 19.885598563000087], [-155.16872274699992, 19.885650959000088], [-155.16870430299991, 19.884296414000062], [-155.1712447699999, 19.881555906000074], [-155.17062773399991, 19.878311986000085], [-155.1709104089999, 19.878037585000072], [-155.17234223699992, 19.878020120000087], [-155.17432461299992, 19.876370201000043], [-155.17602428799992, 19.874994671000081], [-155.17716972399992, 19.874980669000081], [-155.17886565399991, 19.873334207000084], [-155.1805763749999, 19.872771362000037], [-155.18687615699992, 19.872694107000086], [-155.18860171499992, 19.873214810000036], [-155.18775380999992, 19.874038084000063], [-155.18489025299991, 19.874073244000044], [-155.18461132499991, 19.874618570000052], [-155.18062456399991, 19.876293154000052], [-155.17893973999992, 19.878752355000074], [-155.17752272199991, 19.879853504000039], [-155.1784151649999, 19.882281159000058], [-155.18127517099992, 19.881975183000065], [-155.18297483399991, 19.880599587000063], [-155.18554099399992, 19.879755245000069], [-155.18609885699991, 19.878664589000039], [-155.18781331999992, 19.87837257700005], [-155.19063597899992, 19.875357405000045], [-155.19292683399991, 19.87532920600006], [-155.19462258899992, 19.87368260900007], [-155.19660839199992, 19.87230337200009], [-155.19832649399993, 19.872282170000062], [-155.20059859199992, 19.870899358000088], [-155.20086623699993, 19.869541302000073], [-155.20428738499993, 19.868415194000079]]]}, "type": "Feature", "id": 0, "properties": {"hydroUnit": 420, "maintain_e": 12.0854380256, "initial_ef": 13.839912932600001, "soe_class": 7, "maintain_t": 9.6910469276299995, "streamDeg": 0.15467800000000001, "conservati": 3.5259657, "initial_tr": 11.422089632300001, "WSoutput": 5.7000000000000002, "critHab": 0, "potential": 0.56244776673800001}}]}
+
+//L.geoJson(geojsonFeature,
+//{
+//style:style,
+//onEachFeature:oef
+//}).addTo(map);
+//
+// MANUAL GEOJSON FEATURE! -->
